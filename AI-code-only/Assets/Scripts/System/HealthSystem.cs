@@ -8,9 +8,9 @@ public class HealthSystem : MonoBehaviour
     public float currentHealth;
 
     [Header("Events")]
-    public UnityEvent<float, float> onHealthChanged;  // current, max
+    public UnityEvent<float, float> onHealthChanged;
     public UnityEvent onDeath;
-    public UnityEvent<float> onDamaged;               // damage amount
+    public UnityEvent<float> onDamaged;
 
     [Header("Invincibility Frames")]
     public float invincibilityDuration = 0.5f;
@@ -36,13 +36,11 @@ public class HealthSystem : MonoBehaviour
         if (isDead) return;
         if (invincibilityTimer > 0f) return;
 
-        // Apply Infinity filter
         float damage = rawDamage;
         if (infinityShield != null)
             damage = infinityShield.FilterDamage(rawDamage);
 
         currentHealth = Mathf.Max(0, currentHealth - damage);
-
         invincibilityTimer = invincibilityDuration;
         onDamaged?.Invoke(damage);
         onHealthChanged?.Invoke(currentHealth, maxHealth);
@@ -61,9 +59,20 @@ public class HealthSystem : MonoBehaviour
     void Die()
     {
         isDead = true;
+
+        // Delete the player sprite
+        SpriteRenderer sr = GetComponent<SpriteRenderer>();
+        if (sr != null)
+            sr.enabled = false;
+
+        // Disable movement and abilities
+        PlayerController pc = GetComponent<PlayerController>();
+        if (pc != null) pc.enabled = false;
+
+        GojoAbilities ga = GetComponent<GojoAbilities>();
+        if (ga != null) ga.enabled = false;
+
         onDeath?.Invoke();
-        // Play death animation, show game over screen, etc.
-        Debug.Log($"{gameObject.name} has died.");
     }
 
     public float GetHealthNormalized() => currentHealth / maxHealth;

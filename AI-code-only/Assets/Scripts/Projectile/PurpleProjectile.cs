@@ -1,70 +1,38 @@
 using UnityEngine;
 
-/// <summary>
-/// Hollow Purple – A massive erasure beam that destroys everything in its path.
-/// </summary>
 public class PurpleProjectile : MonoBehaviour
 {
-    [Header("Stats")]
-    public Vector2 direction;
-    public float speed = 10f;
+    public float speed = 12f;
     public float damage = 150f;
-    public float erasureRadius = 2.5f;
-    public float lifetime = 6f;
+    public float hitRadius = 0.8f;
 
-    [Header("Beam")]
-    public float beamLength = 20f;
+    [HideInInspector] public Vector2 direction;
 
-    [Header("Effects")]
-    public GameObject trailEffectPrefab;
-    public GameObject erasureEffectPrefab;
-
-    private Rigidbody2D rb;
-    private float distanceTraveled;
-
-    void Awake()
-    {
-        rb = GetComponent<Rigidbody2D>();
-    }
+    private float aliveTime;
 
     void Start()
     {
-        rb.linearVelocity = direction * speed;
-        Destroy(gameObject, lifetime);
+        Destroy(gameObject, 5f);
     }
 
     void Update()
     {
-        distanceTraveled += speed * Time.deltaTime;
+        aliveTime += Time.deltaTime;
 
-        // Continuous wide damage along path
-        Collider2D[] hits = Physics2D.OverlapCircleAll(
-            transform.position, erasureRadius, LayerMask.GetMask("Enemy"));
+        transform.position += (Vector3)(direction * speed * Time.deltaTime);
 
-        foreach (var hit in hits)
+        if (aliveTime < 0.1f) return;
+
+        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, hitRadius);
+        foreach (Collider2D hit in hits)
         {
+            if (hit.CompareTag("Player")) continue;
             EnemyHealth eh = hit.GetComponent<EnemyHealth>();
-            if (eh != null) eh.TakeDamage(damage * Time.deltaTime);
+            if (eh != null)
+            {
+                eh.TakeDamage(damage);
+                // Keep going, do NOT destroy on hit
+            }
         }
-
-        if (distanceTraveled >= beamLength)
-            Destroy(gameObject);
-    }
-
-    void OnTriggerEnter2D(Collider2D other)
-    {
-        if (other.CompareTag("Player")) return;
-
-        EnemyHealth eh = other.GetComponent<EnemyHealth>();
-        if (eh != null) eh.TakeDamage(damage);
-
-        if (erasureEffectPrefab != null)
-            Instantiate(erasureEffectPrefab, other.transform.position, Quaternion.identity);
-    }
-
-    void OnDrawGizmosSelected()
-    {
-        Gizmos.color = new Color(0.6f, 0f, 1f, 0.3f);
-        Gizmos.DrawWireSphere(transform.position, erasureRadius);
     }
 }

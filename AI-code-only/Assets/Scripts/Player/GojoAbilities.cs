@@ -11,7 +11,7 @@ public class GojoAbilities : MonoBehaviour
     public GameObject domainExpansionPrefab;
     public GameObject infiniteVoidOverlay;
 
-    [Header("Spawn Points")]
+    [Header("Spawn Point")]
     public Transform projectileSpawnPoint;
 
     [Header("Cursed Strike")]
@@ -20,12 +20,11 @@ public class GojoAbilities : MonoBehaviour
     public float strikeCECost = 5f;
     public float strikeCooldown = 0.4f;
 
-    [Header("Blue - Lapse")]
+    [Header("Lapse Blue")]
     public float blueCECost = 20f;
     public float blueCooldown = 3f;
-    public float blueForce = 12f;
 
-    [Header("Red - Reversal")]
+    [Header("Reversal Red")]
     public float redCECost = 20f;
     public float redCooldown = 3f;
     public float redForce = 14f;
@@ -52,6 +51,8 @@ public class GojoAbilities : MonoBehaviour
     void Awake()
     {
         cursedEnergy = GetComponent<CursedEnergySystem>();
+        if (projectileSpawnPoint == null)
+            projectileSpawnPoint = transform;
     }
 
     void Update()
@@ -63,83 +64,65 @@ public class GojoAbilities : MonoBehaviour
         domainTimer -= Time.deltaTime;
     }
 
-    // ─── CURSED STRIKE ────────────────────────────────────────────────────────
+    Vector2 FacingDirection()
+    {
+        return projectileSpawnPoint.up;
+    }
+
+    // ── CURSED STRIKE ─────────────────────────────────────────────────────────
     public void CursedStrike()
     {
-        if (strikeTimer > 0f || !cursedEnergy.TrySpend(strikeCECost)) return;
+        if (strikeTimer > 0f) return;
+        if (cursedEnergy != null && !cursedEnergy.TrySpend(strikeCECost)) return;
         strikeTimer = strikeCooldown;
 
         if (cursedStrikeEffect != null)
-            Instantiate(cursedStrikeEffect, projectileSpawnPoint.position, transform.rotation);
+            Instantiate(cursedStrikeEffect, projectileSpawnPoint.position, projectileSpawnPoint.rotation);
 
-        Collider2D[] hits = Physics2D.OverlapCircleAll(
-            projectileSpawnPoint.position,
-            strikeRange,
-            LayerMask.GetMask("Enemy"));
-
+        Collider2D[] hits = Physics2D.OverlapCircleAll(projectileSpawnPoint.position, strikeRange);
         foreach (var hit in hits)
         {
+            if (hit.CompareTag("Player")) continue;
             EnemyHealth eh = hit.GetComponent<EnemyHealth>();
             if (eh != null) eh.TakeDamage(strikeDamage);
         }
     }
 
-    // ─── BLUE ────────────────────────────────────────────────────────────────
+    // ── LAPSE BLUE (COOLDOWN REMOVED) ─────────────────────────────────────────
     public void CastBlue()
     {
-        if (blueTimer > 0f || !cursedEnergy.TrySpend(blueCECost)) return;
-        blueTimer = blueCooldown;
+        if (cursedEnergy != null && !cursedEnergy.TrySpend(blueCECost)) return;
 
-        Vector3 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        mousePos.z = 0f;
+        if (blueProjectilePrefab == null) { Debug.LogError("Blue prefab missing!"); return; }
 
-        Vector2 dir = (mousePos - projectileSpawnPoint.position).normalized;
-
-        GameObject proj = Instantiate(
-            blueProjectilePrefab,
-            projectileSpawnPoint.position,
-            Quaternion.identity
-        );
-
+        GameObject proj = Instantiate(blueProjectilePrefab, projectileSpawnPoint.position, Quaternion.identity);
         BlueProjectile bp = proj.GetComponent<BlueProjectile>();
-
-        if (bp != null)
-        {
-            bp.Initialize(dir);
-            bp.attractionForce = blueForce;
-        }
+        if (bp != null) bp.direction = FacingDirection();
     }
 
-    // ─── RED ────────────────────────────────────────────────────────────────
+    // ── REVERSAL RED ──────────────────────────────────────────────────────────
     public void CastRed()
     {
-        if (redTimer > 0f || !cursedEnergy.TrySpend(redCECost)) return;
+        if (redTimer > 0f) return;
+        if (cursedEnergy != null && !cursedEnergy.TrySpend(redCECost)) return;
         redTimer = redCooldown;
 
-        Vector3 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        mousePos.z = 0f;
+        if (redProjectilePrefab == null) { Debug.LogError("Red prefab missing!"); return; }
 
-        Vector2 dir = (mousePos - projectileSpawnPoint.position).normalized;
-
-        GameObject proj = Instantiate(
-            redProjectilePrefab,
-            projectileSpawnPoint.position,
-            Quaternion.identity
-        );
-
+        GameObject proj = Instantiate(redProjectilePrefab, projectileSpawnPoint.position, Quaternion.identity);
         RedProjectile rp = proj.GetComponent<RedProjectile>();
-
         if (rp != null)
         {
-            rp.Initialize(dir);
+            rp.direction = FacingDirection();
             rp.repulsionForce = redForce;
         }
     }
 
-    // ─── HOLLOW PURPLE ───────────────────────────────────────────────────────
+    // ── HOLLOW PURPLE ─────────────────────────────────────────────────────────
     public void CastHollowPurple()
     {
-        if (purpleTimer > 0f || !cursedEnergy.TrySpend(purpleCECost)) return;
+        if (purpleTimer > 0f) return;
+        if (cursedEnergy != null && !cursedEnergy.TrySpend(purpleCECost)) return;
         purpleTimer = purpleCooldown;
 
         StartCoroutine(HollowPurpleSequence());
@@ -149,26 +132,18 @@ public class GojoAbilities : MonoBehaviour
     {
         yield return new WaitForSeconds(0.5f);
 
-        Vector3 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        mousePos.z = 0f;
+        if (purpleProjectilePrefab == null) yield break;
 
-        Vector2 dir = (mousePos - projectileSpawnPoint.position).normalized;
-
-        GameObject proj = Instantiate(
-            purpleProjectilePrefab,
-            projectileSpawnPoint.position,
-            Quaternion.identity
-        );
-
+        GameObject proj = Instantiate(purpleProjectilePrefab, projectileSpawnPoint.position, Quaternion.identity);
         PurpleProjectile pp = proj.GetComponent<PurpleProjectile>();
-        if (pp != null)
-            pp.direction = dir;
+        if (pp != null) pp.direction = FacingDirection();
     }
 
-    // ─── DOMAIN EXPANSION ────────────────────────────────────────────────────
+    // ── DOMAIN EXPANSION ──────────────────────────────────────────────────────
     public void ActivateDomainExpansion()
     {
-        if (domainTimer > 0f || !cursedEnergy.TrySpend(domainCECost)) return;
+        if (domainTimer > 0f) return;
+        if (cursedEnergy != null && !cursedEnergy.TrySpend(domainCECost)) return;
         domainTimer = domainCooldown;
 
         StartCoroutine(DomainExpansionSequence());
@@ -179,14 +154,16 @@ public class GojoAbilities : MonoBehaviour
         if (infiniteVoidOverlay != null)
             infiniteVoidOverlay.SetActive(true);
 
-        GameObject domain = Instantiate(domainExpansionPrefab, transform.position, Quaternion.identity);
-
-        DomainExpansion de = domain.GetComponent<DomainExpansion>();
-        if (de != null)
+        if (domainExpansionPrefab != null)
         {
-            de.radius = domainRadius;
-            de.damagePerSecond = domainDamagePerSecond;
-            de.duration = domainDuration;
+            GameObject domain = Instantiate(domainExpansionPrefab, transform.position, Quaternion.identity);
+            DomainExpansion de = domain.GetComponent<DomainExpansion>();
+            if (de != null)
+            {
+                de.radius = domainRadius;
+                de.damagePerSecond = domainDamagePerSecond;
+                de.duration = domainDuration;
+            }
         }
 
         yield return new WaitForSeconds(domainDuration);
@@ -195,7 +172,12 @@ public class GojoAbilities : MonoBehaviour
             infiniteVoidOverlay.SetActive(false);
     }
 
-    // ─── COOLDOWNS ───────────────────────────────────────────────────────────
+    public float GetStrikeTimer() => Mathf.Max(0f, strikeTimer);
+    public float GetBlueTimer() => Mathf.Max(0f, blueTimer);
+    public float GetRedTimer() => Mathf.Max(0f, redTimer);
+    public float GetPurpleTimer() => Mathf.Max(0f, purpleTimer);
+    public float GetDomainTimer() => Mathf.Max(0f, domainTimer);
+
     public float GetStrikeCDNorm() => Mathf.Clamp01(strikeTimer / strikeCooldown);
     public float GetBlueCDNorm() => Mathf.Clamp01(blueTimer / blueCooldown);
     public float GetRedCDNorm() => Mathf.Clamp01(redTimer / redCooldown);
@@ -204,8 +186,11 @@ public class GojoAbilities : MonoBehaviour
 
     void OnDrawGizmosSelected()
     {
+        if (projectileSpawnPoint == null) return;
         Gizmos.color = Color.cyan;
-        if (projectileSpawnPoint != null)
-            Gizmos.DrawWireSphere(projectileSpawnPoint.position, strikeRange);
+        Gizmos.DrawWireSphere(projectileSpawnPoint.position, strikeRange);
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawLine(projectileSpawnPoint.position,
+            projectileSpawnPoint.position + projectileSpawnPoint.up * 2f);
     }
 }
