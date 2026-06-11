@@ -10,7 +10,7 @@ public class EnemyAI : MonoBehaviour
     public float attackDamage = 15f;
     public float attackRange = 1.2f;
     public float attackCooldown = 1.2f;
-    public float chaseRange = 8f;
+    // Removed chaseRange since it's no longer needed for distance checks
 
     private float speedMultiplier = 1f;
     private float attackTimer;
@@ -33,12 +33,15 @@ public class EnemyAI : MonoBehaviour
 
         float distToPlayer = Vector2.Distance(transform.position, player.position);
 
+        // State Determination: Always chase if outside attack range
         if (distToPlayer <= attackRange)
+        {
             state = EnemyState.Attack;
-        else if (distToPlayer <= chaseRange)
-            state = EnemyState.Chase;
+        }
         else
-            state = EnemyState.Idle;
+        {
+            state = EnemyState.Chase; // Unlimited vision! Always chases if not attacking.
+        }
 
         switch (state)
         {
