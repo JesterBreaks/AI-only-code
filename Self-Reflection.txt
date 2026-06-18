@@ -1,0 +1,11 @@
+Self-Reflection
+
+In the beginning I had an idea to make a game where you played as Gojo Satoru thinking it was easy but that turned out to be not true at all.
+
+What didn’t go great
+The first day I did a lot of stuff but nothing worked how I wanted it to later that same day I was working with my ai on a project when it banned my account since it thought the activity was from someone that was 18+ with which I’m still so confused and don’t know why it would think that but I had to verify that I was 18+ which I am not so I couldn’t use that ai anymore and so the next lesson instead of just copying everything the first ai did in the new one I decided to start all over again. I remade everything but the core part of the game the shooting projectiles didn’t work so I worked multiple lessons on that the ai couldn’t fix it either when i realized I forgot to set the projectile movement script to the projectiles themselves loosing even more time. The health bar and CE bar aren’t moving down when being used they only change colors so as a fix because they wouldn’t go down, I decided to add numbers saying how much you have left of each. The kill’s counter doesn’t work
+
+
+What did go well
+I’ve had a lot of fun making this project I’ve made the player sprite of Gojo on my own. Eventually after all the failure I managed to make almost everything work, it looks good you can play as Gojo. You can play against waves of enemies that will infinity come back, you will get less damage when you have your infinity activated and every ability has their own attack damage.
+
